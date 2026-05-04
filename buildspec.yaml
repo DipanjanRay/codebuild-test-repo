@@ -4,8 +4,9 @@ phases:
   build:
     commands:
       - echo "===== CODEBUILD TEST ====="
-      - echo "Branch:"
+      - echo "Source Version:"
       - echo $CODEBUILD_SOURCE_VERSION
-      - echo "Triggered at:"
-      - date
-      - echo "Success 🚀"
+      - echo "Webhook Branch (if any):"
+      - echo $CODEBUILD_WEBHOOK_HEAD_REF
+      - echo "Commit ID:"
+      - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
