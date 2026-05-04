@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  GitHubRepoUrl:
+    Type: String
+    Default: https://github.com/DipanjanRay/codebuild-test-repo.git
+
+Resources:
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: codebuild-test-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: codebuild-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # CloudWatch Logs
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+              # CodeConnections permissions
+              - Effect: Allow
+                Action:
+                  - codeconnections:UseConnection
+                  - codeconnections:GetConnection
+                  - codeconnections:GetConnectionToken
+                  - codeconnections:CreateRepositoryLink
+                  - codeconnections:ListRepositoryLinks
+                Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/12a58df4-b0fa-48a0-81dd-1ba248346ca5
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: codebuild-test-repo-project
+
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+
+      Artifacts:
+        Type: NO_ARTIFACTS
+
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepoUrl
+        Auth:
+          Type: CODECONNECTIONS
+          Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/12a58df4-b0fa-48a0-81dd-1ba248346ca5
+        BuildSpec: buildspec.yaml
+
+      TimeoutInMinutes: 10
+
+      Triggers:
+        Webhook: true
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: PUSH
+            - Type: HEAD_REF
+              Pattern: ^refs/heads/main$

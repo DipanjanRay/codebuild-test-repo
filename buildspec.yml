@@ -1,0 +1,11 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "===== CODEBUILD TEST ====="
+      - echo "Branch:"
+      - echo $CODEBUILD_SOURCE_VERSION
+      - echo "Triggered at:"
+      - date
+      - echo "Success 🚀"
