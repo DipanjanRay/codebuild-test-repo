@@ -6,10 +6,15 @@ Parameters:
     Default: https://github.com/DipanjanRay/codebuild-test-repo.git
 
 Resources:
+  #################################################
+  # CodeBuild Service Role
+  #################################################
+
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: codebuild-test-role
+      RoleName: codebuild-test-role-v2
+
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -17,12 +22,18 @@ Resources:
             Principal:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
+
       Policies:
         - PolicyName: codebuild-policy
+
           PolicyDocument:
             Version: "2012-10-17"
+
             Statement:
+              #################################################
               # CloudWatch Logs
+              #################################################
+
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
@@ -30,45 +41,72 @@ Resources:
                   - logs:PutLogEvents
                 Resource: "*"
 
-              # CodeConnections permissions
+              #################################################
+              # Minimal CodeConnections permissions
+              #################################################
+
               - Effect: Allow
                 Action:
                   - codeconnections:UseConnection
                   - codeconnections:GetConnection
                   - codeconnections:GetConnectionToken
-                  - codeconnections:CreateRepositoryLink
-                  - codeconnections:ListRepositoryLinks
-                Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/12a58df4-b0fa-48a0-81dd-1ba248346ca5
+                Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/8da29c89-faa7-42ea-8883-2dc92d7d3a94
+
+  #################################################
+  # CodeBuild Project
+  #################################################
 
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
+
     Properties:
-      Name: codebuild-test-repo-project
+      Name: codebuild-test-repo-project-v2
 
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
 
-      Artifacts:
-        Type: NO_ARTIFACTS
+      TimeoutInMinutes: 10
+
+      #################################################
+      # Build Environment
+      #################################################
 
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:7.0
 
+      #################################################
+      # Artifacts
+      #################################################
+
+      Artifacts:
+        Type: NO_ARTIFACTS
+
+      #################################################
+      # Source
+      #################################################
+
       Source:
         Type: GITHUB
+
         Location: !Ref GitHubRepoUrl
+
         Auth:
           Type: CODECONNECTIONS
-          Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/12a58df4-b0fa-48a0-81dd-1ba248346ca5
+          Resource: arn:aws:codeconnections:us-east-1:144947567001:connection/8da29c89-faa7-42ea-8883-2dc92d7d3a94
+
         BuildSpec: buildspec.yaml
 
-      TimeoutInMinutes: 10
+      #################################################
+      # Webhook Trigger
+      #################################################
 
       Triggers:
         Webhook: true
+
         FilterGroups:
           - - Type: EVENT
               Pattern: PUSH
+
             - Type: HEAD_REF
               Pattern: ^refs/heads/main$
