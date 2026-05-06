@@ -1,1 +1,2 @@
-Testing feature branch change
+pytest==8.0.0
+requests==2.31.0
